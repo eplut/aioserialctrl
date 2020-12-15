@@ -1,15 +1,22 @@
-# Asyncio serial port control
+***************************
+Asyncio serial port control
+***************************
 
-## Overview
+Overview
+########
 
-This module provides async and sync serial port control, but now only supports Windows.  
-It's base on c library [serial.c](./aioserialctrl/serial.c).
+This module provides async and sync serial port control, but now only supports Windows.
 
-## Examples
+It's base on c library `serial.c <https://github.com/eplut/aioserialctrl/blob/main/aioserialctrl/seriallib.c>`_.
 
-Examples directory [example](./example).
+Examples
+########
 
-## Reference
+Examples directory `example <https://github.com/eplut/aioserialctrl/tree/main/example>`_.
 
-[pyserial](https://github.com/pyserial/pyserial)  
-[aioserial](https://github.com/changyuheng/aioserial)  
+Reference
+#########
+
+`pyserial <https://github.com/pyserial/pyserial>`_
+
+`aioserial <https://github.com/changyuheng/aioserial>`_
