@@ -26,7 +26,7 @@ setuptools.setup(
     author_email="eplutus@protonmail.com",
     description="A module of asyncio serail port control.",
     long_description=open("README.rst").read(),
-    long_description_content_type="text/markdown",
+    long_description_content_type="text/x-rst",
     url="https://github.com/eplut/aioserialctrl",
     packages=["aioserialctrl", "aioserialctrl.utils"],
     python_requires=">=3.7",
