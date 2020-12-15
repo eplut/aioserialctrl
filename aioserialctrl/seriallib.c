@@ -35,12 +35,12 @@ void getRegKeyValue(HKEY key, LPCTSTR property, char* data) {
     if (RegQueryValueEx(key, property, NULL, NULL, (LPBYTE)buff, &size) == ERROR_SUCCESS) {
         strncpy(data, buff, size);
     } else {
-        printf("getRegKeyValue: can not obtain value from registry");
+        printf("getRegKeyValue can not obtain value from registry");
     }
     free(buff);
 }
 
-int get_all_serial_port_info(PyObject *serial_port_list){
+int getAllSerialPortInfo(PyObject *serialPortList){
     HDEVINFO devInfo = INVALID_HANDLE_VALUE;
 
     DWORD dwGuids = 0;
@@ -76,12 +76,12 @@ int get_all_serial_port_info(PyObject *serial_port_list){
             getRegKeyValue(devKey, TEXT("PortName"), info.portName);
             RegCloseKey(devKey);
             if (strncmp(info.portName, "COM", 3) == 0) {
-                PyObject *temp_tuple = PyTuple_New(4);
-                PyTuple_SET_ITEM(temp_tuple, 0, PyUnicode_FromString(info.portName));
-                PyTuple_SET_ITEM(temp_tuple, 1, PyUnicode_FromString(info.physName));
-                PyTuple_SET_ITEM(temp_tuple, 2, PyUnicode_FromString(info.friendName));
-                PyTuple_SET_ITEM(temp_tuple, 3, PyUnicode_FromString(info.enumName));
-                PyList_Append(serial_port_list, temp_tuple);
+                PyObject *tempTuple = PyTuple_New(4);
+                PyTuple_SET_ITEM(tempTuple, 0, PyUnicode_FromString(info.portName));
+                PyTuple_SET_ITEM(tempTuple, 1, PyUnicode_FromString(info.physName));
+                PyTuple_SET_ITEM(tempTuple, 2, PyUnicode_FromString(info.friendName));
+                PyTuple_SET_ITEM(tempTuple, 3, PyUnicode_FromString(info.enumName));
+                PyList_Append(serialPortList, tempTuple);
             }
         } else {
             if (GetLastError() != ERROR_NO_MORE_ITEMS) {
@@ -92,7 +92,7 @@ int get_all_serial_port_info(PyObject *serial_port_list){
     return 0;
 }
 
-int serial_port_open(char* port, int baudRate, int byteSize, int stopBits, int parity, int dtrControlEnable) {
+int serialPortOpen(char* port, int baudRate, int byteSize, int stopBits, int parity, int dtrControlEnable) {
     HANDLE handler = CreateFile(port,
                                 GENERIC_READ | GENERIC_WRITE,
                                 0,
@@ -130,7 +130,7 @@ int serial_port_open(char* port, int baudRate, int byteSize, int stopBits, int p
     return 0;
 }
 
-int serial_port_write(int handler, const char *data, unsigned int dataSize) {
+int serialPortWrite(int handler, const char *data, unsigned int dataSize) {
     COMSTAT status;
     DWORD errors;
     if (!WriteFile((HANDLE)handler, (void*)data, dataSize, NULL, 0)) {
@@ -141,7 +141,7 @@ int serial_port_write(int handler, const char *data, unsigned int dataSize) {
     return 1;
 }
 
-int serial_port_recv(int handler, char *data, unsigned int dataSize) {
+int serialPortRecv(int handler, char *data, unsigned int dataSize) {
     DWORD bytesRead;
     COMSTAT status;
     DWORD errors;
@@ -164,21 +164,21 @@ int serial_port_recv(int handler, char *data, unsigned int dataSize) {
     return 0;
 }
 
-int serial_port_close(int handler) {
+int serialPortClose(int handler) {
     return CloseHandle((HANDLE)handler);
 }
 
 
-static PyObject *_get_all_serial_port_info(PyObject *self, PyObject *args, PyObject *kwargs) {
-    PyObject *serial_port_list = PyList_New(0);
-    if (get_all_serial_port_info(serial_port_list) == INVALID_HANDLE_VALUE) {
+static PyObject *_getAllSerialPortInfo(PyObject *self, PyObject *args, PyObject *kwargs) {
+    PyObject *serialPortList = PyList_New(0);
+    if (getAllSerialPortInfo(serialPortList) == INVALID_HANDLE_VALUE) {
         return NULL;
     }
 
-    return serial_port_list;
+    return serialPortList;
 }
 
-static PyObject *_serial_port_open(PyObject *self, PyObject *args, PyObject *kwargs) {
+static PyObject *_serialPortOpen(PyObject *self, PyObject *args, PyObject *kwargs) {
     char* port;
     int baudRate;
     int byteSize;
@@ -197,7 +197,7 @@ static PyObject *_serial_port_open(PyObject *self, PyObject *args, PyObject *kwa
         return NULL;
     }
 
-    handler = serial_port_open(port, baudRate, byteSize, stopBits, parity, dtrControlEnable);
+    handler = serialPortOpen(port, baudRate, byteSize, stopBits, parity, dtrControlEnable);
     if (handler == 0) {
         errCode = GetLastError();
         FormatMessageW(
@@ -214,7 +214,7 @@ static PyObject *_serial_port_open(PyObject *self, PyObject *args, PyObject *kwa
     return Py_BuildValue("iyi", errCode, errMsg, handler);
 }
 
-static PyObject *_serial_port_write(PyObject *self, PyObject *args, PyObject *kwargs) {
+static PyObject *_serialPortWrite(PyObject *self, PyObject *args, PyObject *kwargs) {
     int handler;
     char* cmd;
     int cmdLen;
@@ -227,7 +227,7 @@ static PyObject *_serial_port_write(PyObject *self, PyObject *args, PyObject *kw
         return NULL;
     }
 
-    flag = serial_port_write(handler, cmd, cmdLen);
+    flag = serialPortWrite(handler, cmd, cmdLen);
     if (flag == 0) {
         errCode = GetLastError();
         FormatMessageW(
@@ -244,7 +244,7 @@ static PyObject *_serial_port_write(PyObject *self, PyObject *args, PyObject *kw
     return Py_BuildValue("iy", errCode, errMsg);
 }
 
-static PyObject *_serial_port_recv(PyObject *self, PyObject *args, PyObject *kwargs) {
+static PyObject *_serialPortRecv(PyObject *self, PyObject *args, PyObject *kwargs) {
     int handler;
     static char *kwlist[] = {"handler", NULL};
     int len;
@@ -256,7 +256,7 @@ static PyObject *_serial_port_recv(PyObject *self, PyObject *args, PyObject *kwa
         return NULL;
     }
 
-    len = serial_port_recv(handler, buf, MAX_DATA_LENGTH);
+    len = serialPortRecv(handler, buf, MAX_DATA_LENGTH);
     errCode = GetLastError();
     if (errCode > 0) {
         errCode = GetLastError();
@@ -276,7 +276,7 @@ static PyObject *_serial_port_recv(PyObject *self, PyObject *args, PyObject *kwa
     return Py_BuildValue("iyy#", errCode, errMsg, buf, len);
 }
 
-static PyObject *_serial_port_close(PyObject *self, PyObject *args, PyObject *kwargs) {
+static PyObject *_serialPortClose(PyObject *self, PyObject *args, PyObject *kwargs) {
     int handler;
     static char *kwlist[] = {"handler", NULL};
     int flag;
@@ -287,7 +287,7 @@ static PyObject *_serial_port_close(PyObject *self, PyObject *args, PyObject *kw
         return NULL;
     }
 
-    flag = serial_port_close(handler);
+    flag = serialPortClose(handler);
     if (flag == 0) {
         errCode = GetLastError();
         FormatMessageW(
@@ -305,15 +305,15 @@ static PyObject *_serial_port_close(PyObject *self, PyObject *args, PyObject *kw
 }
 
 static PyMethodDef RunPEMethods[] = {
-    {"get_all_serial_port_info", (PyCFunction) _get_all_serial_port_info, METH_VARARGS | METH_KEYWORDS, "Get all serail port info."},
-    {"open", (PyCFunction) _serial_port_open, METH_VARARGS | METH_KEYWORDS, "Connect serail port."},
-    {"write", (PyCFunction) _serial_port_write, METH_VARARGS | METH_KEYWORDS, "Write to serail port."},
-    {"recv", (PyCFunction) _serial_port_recv, METH_VARARGS | METH_KEYWORDS, "Recv from serail port."},
-    {"close", (PyCFunction) _serial_port_close, METH_VARARGS | METH_KEYWORDS, "Close serail port."},
+    {"get_all_serial_port_info", (PyCFunction) _getAllSerialPortInfo, METH_VARARGS | METH_KEYWORDS, "Get all serail port info."},
+    {"open", (PyCFunction) _serialPortOpen, METH_VARARGS | METH_KEYWORDS, "Connect serail port."},
+    {"write", (PyCFunction) _serialPortWrite, METH_VARARGS | METH_KEYWORDS, "Write to serail port."},
+    {"recv", (PyCFunction) _serialPortRecv, METH_VARARGS | METH_KEYWORDS, "Recv from serail port."},
+    {"close", (PyCFunction) _serialPortClose, METH_VARARGS | METH_KEYWORDS, "Close serail port."},
     {NULL, NULL, 0, NULL}
 };
 
-static struct PyModuleDef seriallib_module = {
+static struct PyModuleDef seriallibModule = {
     PyModuleDef_HEAD_INIT,
     "seriallib",
     "A module serail port control.",
@@ -322,5 +322,5 @@ static struct PyModuleDef seriallib_module = {
 };
 
 PyMODINIT_FUNC PyInit_seriallib() {
-    return PyModule_Create(&seriallib_module);
+    return PyModule_Create(&seriallibModule);
 }
