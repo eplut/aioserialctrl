@@ -1,5 +1,6 @@
 import threading
 from time import sleep
+from contextlib import contextmanager
 
 import seriallib
 
@@ -9,22 +10,49 @@ from .exceptions import (
     SerialCtrlError, SerialPortConnectError,
 )
 
+class RWLock:
+    def __init__(self, timeout=-1):
+        self._lock = threading.Lock()
+        self._timeout = timeout
+
+    def acquire(self, timeout=None):
+        if timeout == None:
+            current_timeout = self._timeout
+        else:
+            current_timeout = timeout
+
+        self._lock.acquire(timeout=current_timeout)
+
+    def release(self):
+        self._lock.release()
+
+    @contextmanager
+    def locked(self, timeout=None):
+        try:
+            self.acquire(timeout=timeout)
+            yield self._lock
+        finally:
+            self.release()
+
 class DataBuf:
     def __init__(self):
-        self.__buf = bytes()
+        self._buf = bytes(b"")
+        self.rwlock = RWLock(timeout=3)
 
     def size(self):
-        return len(self.__buf)
+        return len(self._buf)
 
     def is_empty(self):
         return True if self.size() == 0 else False
 
     def append(self, bytes_data):
-        self.__buf += bytes_data
+        with self.rwlock.locked():
+            self._buf += bytes_data
 
     def pop(self, num):
-        ret = self.__buf[:num]
-        self.__buf = self.__buf[num:]
+        with self.rwlock.locked():
+            ret = self._buf[:num]
+            self._buf = self._buf[num:]
         return ret
 
     def get_all(self):
