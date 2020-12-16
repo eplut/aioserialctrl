@@ -77,10 +77,10 @@ int getAllSerialPortInfo(PyObject *serialPortList){
             RegCloseKey(devKey);
             if (strncmp(info.portName, "COM", 3) == 0) {
                 PyObject *tempTuple = PyTuple_New(4);
-                PyTuple_SET_ITEM(tempTuple, 0, PyUnicode_FromString(info.portName));
-                PyTuple_SET_ITEM(tempTuple, 1, PyUnicode_FromString(info.physName));
-                PyTuple_SET_ITEM(tempTuple, 2, PyUnicode_FromString(info.friendName));
-                PyTuple_SET_ITEM(tempTuple, 3, PyUnicode_FromString(info.enumName));
+                PyTuple_SET_ITEM(tempTuple, 0, Py_BuildValue("y", info.portName));
+                PyTuple_SET_ITEM(tempTuple, 1, Py_BuildValue("y", info.physName));
+                PyTuple_SET_ITEM(tempTuple, 2, Py_BuildValue("y", info.friendName));
+                PyTuple_SET_ITEM(tempTuple, 3, Py_BuildValue("y", info.enumName));
                 PyList_Append(serialPortList, tempTuple);
             }
         } else {
