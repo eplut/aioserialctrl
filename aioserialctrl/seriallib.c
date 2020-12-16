@@ -4,7 +4,7 @@
 #include <windows.h>
 #include <SetupAPI.h>
 
-#define MAX_DATA_LENGTH 256
+#define MAX_DATA_LENGTH 65535
 #define ERR_MSG_LENGTH 65535
 #define PORT_INFO_LENGTH 65535
 
