@@ -15,7 +15,14 @@ class PortInfo:
 def get_all():
     port_list = []
     for port, physical_name, friend_name, enum_name in seriallib.get_all_serial_port_info():
-        port_list.append(PortInfo(port, physical_name, friend_name, enum_name))
+        port_list.append(
+            PortInfo(
+                port.decode("DBCS", errors="ignore"),
+                physical_name.decode("DBCS", errors="ignore"),
+                friend_name.decode("DBCS", errors="ignore"),
+                enum_name.decode("DBCS", errors="ignore")
+            )
+        )
 
     return port_list
 
