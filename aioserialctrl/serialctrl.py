@@ -90,6 +90,7 @@ class SerialCtrl:
         self._buf = DataBuf()
         self._store_buf_threading_event = None
         self._store_buf_threading_task = None
+        self._store_buf_threading_exception = None
         self._is_read_canceled = False
 
     def open(self):
@@ -113,22 +114,28 @@ class SerialCtrl:
         if not isinstance(buf, bytes):
             raise CommandMustBytesType()
 
-        if self._connected:
-            error_code, error_msg = seriallib.write(self._handler, buf, len(buf))
-            if error_code != -1:
-                raise SerialCtrlError(self.error_format(error_code, error_msg))
-        else:
+        if not self._connected:
             raise SerialPortNotConnected()
 
+        error_code, error_msg = seriallib.write(self._handler, buf, len(buf))
+        if error_code != -1:
+            raise SerialCtrlError(self.error_format(error_code, error_msg))
+
     def read(self, size=1):
+        if not self._connected:
+            raise SerialPortNotConnected()
         return self._buf.bytes(size)
 
     def reads(self):
+        if not self._connected:
+            raise SerialPortNotConnected()
         return self._buf.get_all()
 
     def read_until(self, expected, timeout=5):
+        if not self._connected:
+            raise SerialPortNotConnected()
         expected_len = len(expected)
-        ret = bytes()
+        ret = bytes(b"")
         sleep_time = 0.1
 
         while timeout >= 0 and not self._is_read_canceled:
@@ -147,8 +154,15 @@ class SerialCtrl:
 
     def __store_data_to_buffer_task(self):
         while not self._store_buf_threading_event.is_set():
-            self.store_data_to_buffer()
+            try:
+                self.store_data_to_buffer()
+            except Exception as err:
+                if not self._store_buf_threading_event.is_set():
+                    self._store_buf_threading_exception = err
+                break
             sleep(0.1)
+        if not self._store_buf_threading_event.is_set():
+            self.close()
 
     def store_data_to_buffer(self):
         if self._connected:
@@ -163,7 +177,10 @@ class SerialCtrl:
         if self._connected:
             self.cancel_read()
             self._store_buf_threading_event.set()
-            self._store_buf_threading_task.join()
+            try:
+                self._store_buf_threading_task.join()
+            except:
+                pass
             self._store_buf_threading_event = None
             self._store_buf_threading_task = None
             error_code, error_msg = seriallib.close(self._handler)
@@ -171,6 +188,11 @@ class SerialCtrl:
                 raise SerialCtrlError(self.error_format(error_code, error_msg))
             self._handler = 0
             self._connected = False
+
+            if self._store_buf_threading_exception:
+                temp_exception = self._store_buf_threading_exception
+                self._store_buf_threading_exception = None
+                raise temp_exception
 
     def error_format(self, error_code, error_msg):
         return f"Error code({error_code}): {error_msg.decode('utf-16', errors='ignore')}"
